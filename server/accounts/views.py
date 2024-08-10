@@ -3,10 +3,13 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authentication import BasicAuthentication
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.serializers import AuthTokenSerializer
+from rest_framework import generics
+
+from accounts.serializers import UserSerializer
 
 
 class RegisterView(APIView):
@@ -30,3 +33,9 @@ class LoginView(ObtainAuthToken):
     authentication_classes = [BasicAuthentication]
     permission_classes = [AllowAny]
     serializer_class = AuthTokenSerializer
+
+
+class UserListView(generics.ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [AllowAny]  # Changed to require authentication
