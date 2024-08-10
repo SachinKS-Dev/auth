@@ -1,13 +1,15 @@
 // src/Dashboard.js
 import React, {useState, useEffect} from 'react';
-import axios from './axiosInstance';
+import axios from './axiosInstance'; // Assuming axiosInstance is configured with base URL and token
 
 function Dashboard() {
     const [users, setUsers] = useState([]);
     const [receivedRequests, setReceivedRequests] = useState([]);
-    const [toUserId, setToUserId] = useState('');
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
+    const [chatUserId, setChatUserId] = useState(null);
+    const [chatMessages, setChatMessages] = useState([]);
+    const [newMessage, setNewMessage] = useState('');
 
     const token = localStorage.getItem('token');
 
@@ -16,9 +18,7 @@ function Dashboard() {
         const fetchUsers = async () => {
             try {
                 const response = await axios.get('users/', {
-                    headers: {
-                        Authorization: `Token ${token}`,
-                    },
+                    headers: {Authorization: `Token ${token}`},
                 });
                 setUsers(response.data);
             } catch (err) {
@@ -30,9 +30,7 @@ function Dashboard() {
         const fetchReceivedRequests = async () => {
             try {
                 const response = await axios.get('interests/received/', {
-                    headers: {
-                        Authorization: `Token ${token}`,
-                    },
+                    headers: {Authorization: `Token ${token}`},
                 });
                 setReceivedRequests(response.data);
             } catch (err) {
@@ -50,9 +48,7 @@ function Dashboard() {
                 'interests/',
                 {to_user: userId},
                 {
-                    headers: {
-                        Authorization: `Token ${token}`,
-                    },
+                    headers: {Authorization: `Token ${token}`},
                 }
             );
             setMessage('Interest sent successfully!');
@@ -69,23 +65,53 @@ function Dashboard() {
                 `interests/${interestId}/handle/`,
                 {status: status},
                 {
-                    headers: {
-                        Authorization: `Token ${token}`,
-                    },
+                    headers: {Authorization: `Token ${token}`},
                 }
             );
             setMessage(`Interest ${status === 2 ? 'accepted' : 'rejected'} successfully!`);
             setError('');
 
+            // Refresh the list of received requests
             const response = await axios.get('interests/received/', {
-                headers: {
-                    Authorization: `Token ${token}`,
-                },
+                headers: {Authorization: `Token ${token}`},
             });
             setReceivedRequests(response.data);
         } catch (err) {
-            setError(`Failed to ${status === 1 ? 'accept' : 'reject'} the interest.`);
+            setError(`Failed to ${status === 2 ? 'accept' : 'reject'} the interest.`);
             setMessage('');
+        }
+    };
+
+    const handleChat = async (recipientId) => {
+        try {
+            const response = await axios.get(`chat-history/${recipientId}/`, {
+                headers: {Authorization: `Token ${token}`},
+            });
+            setChatUserId(recipientId);
+            setChatMessages(response.data);
+        } catch (err) {
+            setError('Failed to fetch chat history.');
+        }
+    };
+
+    const handleSendMessage = async () => {
+        if (!newMessage.trim()) return;
+
+        try {
+            await axios.post(
+                'messages/',
+                {
+                    recipient: chatUserId,
+                    content: newMessage,
+                },
+                {
+                    headers: {Authorization: `Token ${token}`},
+                }
+            );
+            setNewMessage('');
+            handleChat(chatUserId); // Refresh chat messages
+        } catch (err) {
+            setError('Failed to send message.');
         }
     };
 
@@ -142,10 +168,44 @@ function Dashboard() {
                                     </button>
                                 </div>
                             )}
+                            {request.status === 2 && (
+                                <button onClick={() => handleChat(request.from_user.id)}>
+                                    Chat
+                                </button>
+                            )}
                         </div>
                     ))}
                 </div>
             </section>
+
+            {chatUserId && (
+                <section>
+                    <h3>Chat with User {chatUserId}</h3>
+                    <div>
+                        {chatMessages.map((message) => (
+                            <div
+                                key={message.id}
+                                style={{
+                                    border: '1px solid #ddd',
+                                    margin: '10px',
+                                    padding: '10px',
+                                    borderRadius: '8px',
+                                }}
+                            >
+                                <p><strong>{message.sender.username}:</strong> {message.content}</p>
+                                <p><small>{new Date(message.timestamp).toLocaleString()}</small></p>
+                            </div>
+                        ))}
+                        <input
+                            type="text"
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            placeholder="Type your message"
+                        />
+                        <button onClick={handleSendMessage}>Send</button>
+                    </div>
+                </section>
+            )}
 
             {error && <p style={{color: 'red'}}>{error}</p>}
             {message && <p style={{color: 'green'}}>{message}</p>}

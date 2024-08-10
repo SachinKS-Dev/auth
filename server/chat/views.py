@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from .models import Interest, Message
 from .serializers import InterestSerializer, MessageSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
-
+from django.db import models
 
 class CreateInterestView(APIView):
     permission_classes = [AllowAny]
@@ -73,3 +73,15 @@ class ReceivedInterestListView(generics.ListAPIView):
         if isinstance(user, AnonymousUser):
             return Interest.objects.none()  # Or handle as per your requirement
         return Interest.objects.filter(to_user=user)
+
+class ChatHistoryView(generics.ListAPIView):
+    serializer_class = MessageSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        recipient_id = self.kwargs.get('recipient_id')
+        return Message.objects.filter(
+            (models.Q(sender=user) & models.Q(recipient_id=recipient_id)) |
+            (models.Q(sender_id=recipient_id) & models.Q(recipient=user))
+        )
