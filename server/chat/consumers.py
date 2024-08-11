@@ -4,6 +4,7 @@ import json
 from .models import Message, ChatRoom
 from django.contrib.auth.models import User
 
+
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_name = self.scope['url_route']['kwargs']['chat_room_id']
@@ -25,9 +26,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         data = json.loads(text_data)
         message_content = data['message']
+        username = data['username']
         chat_room_id = self.room_name
 
         sender = self.scope["user"]
+        sender = await self.get_user(username)
+
         chat_room = await self.get_chat_room_by_id(chat_room_id)
 
         # Save message to the database asynchronously
@@ -53,6 +57,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'sender': sender,
             'timestamp': timestamp,
         }))
+
+    @database_sync_to_async
+    def get_user(self, username):
+        return User.objects.get(username=username)
 
     @database_sync_to_async
     def get_chat_room_by_id(self, chat_room_id):

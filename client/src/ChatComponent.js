@@ -33,11 +33,10 @@ function ChatComponent({ chatRoomId }) {
     }, [messages]);
 
     const handleSendMessage = () => {
-        alert(username)
         if (ws && newMessage.trim() !== '') {
             const messageData = {
                 message: newMessage.trim(),
-                sender: username, // Include username in the message data
+                username: username, // Include username in the message data
             };
             ws.send(JSON.stringify(messageData));
             setNewMessage('');
