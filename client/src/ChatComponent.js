@@ -6,6 +6,9 @@ function ChatComponent({ chatRoomId }) {
     const [ws, setWs] = useState(null);
     const chatEndRef = useRef(null);
 
+    // Retrieve username from local storage
+    const username = localStorage.getItem('username');
+
     useEffect(() => {
         // Establish WebSocket connection
         const socket = new WebSocket(`ws://localhost:8001/ws/chat/${chatRoomId}/`);
@@ -30,9 +33,11 @@ function ChatComponent({ chatRoomId }) {
     }, [messages]);
 
     const handleSendMessage = () => {
+        alert(username)
         if (ws && newMessage.trim() !== '') {
             const messageData = {
                 message: newMessage.trim(),
+                sender: username, // Include username in the message data
             };
             ws.send(JSON.stringify(messageData));
             setNewMessage('');
@@ -59,7 +64,7 @@ function ChatComponent({ chatRoomId }) {
             >
                 {messages.map((message, index) => (
                     <div key={index} style={{ marginBottom: '10px' }}>
-                        <strong>{message.sender}</strong>: {message.content}
+                        <strong>{message.sender}</strong>: {message.message}
                     </div>
                 ))}
                 <div ref={chatEndRef} />

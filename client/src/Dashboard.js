@@ -1,3 +1,4 @@
+// src/Dashboard.js
 import React, { useState, useEffect } from 'react';
 import axios from './axiosInstance';
 import ChatComponent from './ChatComponent';
@@ -11,6 +12,7 @@ function Dashboard() {
     const [selectedChatUser, setSelectedChatUser] = useState(null);
 
     const token = localStorage.getItem('token');
+    const username = localStorage.getItem('username'); // Retrieve username from localStorage
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -89,29 +91,29 @@ function Dashboard() {
     };
 
     const handleChat = async (userId) => {
-    try {
-        const response = await axios.post(
-            'chatrooms/create_or_get/',  // Endpoint to create or get a chat room
-            { participant_id: userId },
-            {
-                headers: {
-                    Authorization: `Token ${token}`,
-                },
-            }
-        );
-        // Update state with chat room ID and selected user
-        setSelectedChatRoomId(response.data.chat_room_id);
-        setSelectedChatUser(users.find(user => user.id === userId));
-        setError('');
-    } catch (err) {
-        setError('Failed to start chat.');
-        setMessage('');
-    }
-};
+        try {
+            const response = await axios.post(
+                'chatrooms/create_or_get/',  // Endpoint to create or get a chat room
+                { participant_id: userId },
+                {
+                    headers: {
+                        Authorization: `Token ${token}`,
+                    },
+                }
+            );
+            setSelectedChatRoomId(response.data.chat_room_id);
+            setSelectedChatUser(users.find(user => user.id === userId));
+            setError('');
+        } catch (err) {
+            setError('Failed to start chat.');
+            setMessage('');
+        }
+    };
 
     return (
         <div>
             <h2>Dashboard</h2>
+            <p>Logged in as: {username}</p> {/* Display username */}
 
             <section>
                 <h3>Users</h3>
