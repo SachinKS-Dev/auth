@@ -4,7 +4,8 @@ import WebSocket from 'isomorphic-ws';
 function ChatRoom({ roomName }) {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
-  const ws = new WebSocket(`ws://localhost:8000/ws/chat/${roomName}/`);
+  const ws = new WebSocket('ws://localhost:8000/ws/chat/');
+
 
   useEffect(() => {
     ws.onmessage = (event) => {
