@@ -3,8 +3,8 @@ from django.db.models import Q
 from rest_framework import status, generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Interest, Message
-from .serializers import InterestSerializer, MessageSerializer
+from .models import Interest, Message, ChatRoom
+from .serializers import InterestSerializer, MessageSerializer, ChatRoomSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 
 
@@ -84,14 +84,12 @@ class SendMessageView(APIView):
 
 
 class MessageListView(generics.ListAPIView):
-    print('---------')
     serializer_class = MessageSerializer
     permission_classes = [AllowAny]
 
     def get_queryset(self):
         recipient_id = self.request.query_params.get('recipient')
         sender_id = self.request.user.id
-        print(sender_id,recipient_id, '------')
 
         if recipient_id:
             return Message.objects.filter(
@@ -99,3 +97,51 @@ class MessageListView(generics.ListAPIView):
                 Q(sender_id=recipient_id, recipient_id=sender_id)
             ).order_by('timestamp')
         return Message.objects.all()
+
+
+class ChatRoomCreateOrGetView(generics.GenericAPIView):
+    serializer_class = ChatRoomSerializer
+
+    def post(self, request, *args, **kwargs):
+        participant_id = request.data.get('participant_id')
+        if not participant_id:
+            return Response({'error': 'participant_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        participant = User.objects.get(id=participant_id)
+        user = request.user
+
+        # Check if a chat room already exists with the current user and the participant
+        chat_room = ChatRoom.objects.filter(participants=user).filter(participants=participant).first()
+        if not chat_room:
+            # Create a new chat room if it does not exist
+            chat_room = ChatRoom.objects.create(name=f'Chat Room with {participant.username}')
+            chat_room.participants.add(user, participant)
+
+        return Response({'chat_room_id': chat_room.id}, status=status.HTTP_200_OK)
+
+
+class ChatRoomCreateView(generics.CreateAPIView):
+    queryset = ChatRoom.objects.all()
+    serializer_class = ChatRoomSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            # Save the chat room
+            chat_room = serializer.save()
+
+            # Add participants to the chat room
+            participants = request.data.get('participants', [])
+            chat_room.participants.set(participants)
+
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        else:
+            # Print errors for debugging
+            print("Serializer errors:", serializer.errors)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ChatRoomListView(generics.ListAPIView):
+    queryset = ChatRoom.objects.all()
+    serializer_class = ChatRoomSerializer

@@ -7,12 +7,12 @@ function Dashboard() {
     const [receivedRequests, setReceivedRequests] = useState([]);
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
+    const [selectedChatRoomId, setSelectedChatRoomId] = useState(null);
     const [selectedChatUser, setSelectedChatUser] = useState(null);
 
     const token = localStorage.getItem('token');
 
     useEffect(() => {
-        // Fetch users
         const fetchUsers = async () => {
             try {
                 const response = await axios.get('users/', {
@@ -26,7 +26,6 @@ function Dashboard() {
             }
         };
 
-        // Fetch received interest requests
         const fetchReceivedRequests = async () => {
             try {
                 const response = await axios.get('interests/received/', {
@@ -89,6 +88,27 @@ function Dashboard() {
         }
     };
 
+    const handleChat = async (userId) => {
+    try {
+        const response = await axios.post(
+            'chatrooms/create_or_get/',  // Endpoint to create or get a chat room
+            { participant_id: userId },
+            {
+                headers: {
+                    Authorization: `Token ${token}`,
+                },
+            }
+        );
+        // Update state with chat room ID and selected user
+        setSelectedChatRoomId(response.data.chat_room_id);
+        setSelectedChatUser(users.find(user => user.id === userId));
+        setError('');
+    } catch (err) {
+        setError('Failed to start chat.');
+        setMessage('');
+    }
+};
+
     return (
         <div>
             <h2>Dashboard</h2>
@@ -106,7 +126,7 @@ function Dashboard() {
                         }}>
                             <h4>{user.username}</h4>
                             <button onClick={() => handleSendInterest(user.id)}>Send Request</button>
-                            <button onClick={() => setSelectedChatUser(user)}>Chat</button>
+                            <button onClick={() => handleChat(user.id)}>Chat</button>
                         </div>
                     ))}
                 </div>
@@ -148,10 +168,10 @@ function Dashboard() {
                 </div>
             </section>
 
-            {selectedChatUser && (
+            {selectedChatRoomId && selectedChatUser && (
                 <section>
                     <h3>Chat with {selectedChatUser.username}</h3>
-                    <ChatComponent recipientId={selectedChatUser.id} />
+                    <ChatComponent chatRoomId={selectedChatRoomId} />
                 </section>
             )}
 
