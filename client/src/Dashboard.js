@@ -1,13 +1,13 @@
-// src/Dashboard.js
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from './axiosInstance';
+import ChatComponent from './ChatComponent';
 
 function Dashboard() {
     const [users, setUsers] = useState([]);
     const [receivedRequests, setReceivedRequests] = useState([]);
-    const [toUserId, setToUserId] = useState('');
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
+    const [selectedChatUser, setSelectedChatUser] = useState(null);
 
     const token = localStorage.getItem('token');
 
@@ -48,7 +48,7 @@ function Dashboard() {
         try {
             await axios.post(
                 'interests/',
-                {to_user: userId},
+                { to_user: userId },
                 {
                     headers: {
                         Authorization: `Token ${token}`,
@@ -67,7 +67,7 @@ function Dashboard() {
         try {
             await axios.post(
                 `interests/${interestId}/handle/`,
-                {status: status},
+                { status: status },
                 {
                     headers: {
                         Authorization: `Token ${token}`,
@@ -95,7 +95,7 @@ function Dashboard() {
 
             <section>
                 <h3>Users</h3>
-                <div style={{display: 'flex', flexWrap: 'wrap'}}>
+                <div style={{ display: 'flex', flexWrap: 'wrap' }}>
                     {users.map((user) => (
                         <div key={user.id} style={{
                             border: '1px solid #ddd',
@@ -106,6 +106,7 @@ function Dashboard() {
                         }}>
                             <h4>{user.username}</h4>
                             <button onClick={() => handleSendInterest(user.id)}>Send Request</button>
+                            <button onClick={() => setSelectedChatUser(user)}>Chat</button>
                         </div>
                     ))}
                 </div>
@@ -130,13 +131,13 @@ function Dashboard() {
                                 <div>
                                     <button
                                         onClick={() => handleConfirmInterest(request.id, 2)}
-                                        style={{marginRight: '10px', backgroundColor: 'green', color: 'white'}}
+                                        style={{ marginRight: '10px', backgroundColor: 'green', color: 'white' }}
                                     >
                                         Accept
                                     </button>
                                     <button
                                         onClick={() => handleConfirmInterest(request.id, 3)}
-                                        style={{backgroundColor: 'red', color: 'white'}}
+                                        style={{ backgroundColor: 'red', color: 'white' }}
                                     >
                                         Reject
                                     </button>
@@ -147,8 +148,15 @@ function Dashboard() {
                 </div>
             </section>
 
-            {error && <p style={{color: 'red'}}>{error}</p>}
-            {message && <p style={{color: 'green'}}>{message}</p>}
+            {selectedChatUser && (
+                <section>
+                    <h3>Chat with {selectedChatUser.username}</h3>
+                    <ChatComponent recipientId={selectedChatUser.id} />
+                </section>
+            )}
+
+            {error && <p style={{ color: 'red' }}>{error}</p>}
+            {message && <p style={{ color: 'green' }}>{message}</p>}
         </div>
     );
 }

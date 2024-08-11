@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User, AnonymousUser
+from django.db.models import Q
 from rest_framework import status, generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -54,22 +55,47 @@ class ConfirmInterestView(APIView):
                         status=status.HTTP_200_OK)
 
 
-class SendMessageView(APIView):
-    def post(self, request):
-        serializer = MessageSerializer(data=request.data)
-        if serializer.is_valid():
-            message = serializer.save()
-            return Response(MessageSerializer(message).data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
 class ReceivedInterestListView(generics.ListAPIView):
     serializer_class = InterestSerializer
     permission_classes = [AllowAny]
 
     def get_queryset(self):
         user = self.request.user
-        print(user)  # This should print AnonymousUser if not authenticated
         if isinstance(user, AnonymousUser):
             return Interest.objects.none()  # Or handle as per your requirement
         return Interest.objects.filter(to_user=user)
+
+
+class SendMessageView(APIView):
+    def post(self, request):
+        # Automatically set the sender to the currently authenticated user
+        sender = request.user
+
+        # Combine the request data with the sender data
+        data = request.data.copy()
+        data['sender'] = sender.id
+
+        serializer = MessageSerializer(data=data)
+        if serializer.is_valid():
+            message = serializer.save()
+            return Response(MessageSerializer(message).data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class MessageListView(generics.ListAPIView):
+    print('---------')
+    serializer_class = MessageSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        recipient_id = self.request.query_params.get('recipient')
+        sender_id = self.request.user.id
+        print(sender_id,recipient_id, '------')
+
+        if recipient_id:
+            return Message.objects.filter(
+                Q(sender_id=sender_id, recipient_id=recipient_id) |
+                Q(sender_id=recipient_id, recipient_id=sender_id)
+            ).order_by('timestamp')
+        return Message.objects.all()
