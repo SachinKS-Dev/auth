@@ -4,7 +4,6 @@ import json
 from .models import Message, ChatRoom
 from django.contrib.auth.models import User
 
-
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_name = self.scope['url_route']['kwargs']['chat_room_id']
@@ -16,6 +15,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
         await self.accept()
+
+        # Fetch and send the last 50 messages from the chat room to the user
+        past_messages = await self.get_past_messages(self.room_name)
+        for message in past_messages:
+            await self.send(text_data=json.dumps({
+                'message': message['content'],
+                'sender': message['sender'],
+                'timestamp': message['timestamp'],
+            }))
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(
@@ -29,9 +37,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         username = data['username']
         chat_room_id = self.room_name
 
-        sender = self.scope["user"]
         sender = await self.get_user(username)
-
         chat_room = await self.get_chat_room_by_id(chat_room_id)
 
         # Save message to the database asynchronously
@@ -41,9 +47,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.room_group_name,
             {
                 'type': 'chat_message',
-                'message': saved_message.content,
-                'sender': saved_message.sender.username,
-                'timestamp': saved_message.timestamp.isoformat(),
+                'message': saved_message['content'],
+                'sender': saved_message['sender'],
+                'timestamp': saved_message['timestamp'],
             }
         )
 
@@ -68,4 +74,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def save_message(self, chat_room, sender, content):
-        return Message.objects.create(chat_room=chat_room, sender=sender, content=content)
+        message = Message.objects.create(chat_room=chat_room, sender=sender, content=content)
+        return {
+            'content': message.content,
+            'sender': message.sender.username,
+            'timestamp': message.timestamp.isoformat(),
+        }
+
+    @database_sync_to_async
+    def get_past_messages(self, chat_room_id):
+        chat_room = ChatRoom.objects.get(id=chat_room_id)
+        messages = Message.objects.filter(chat_room=chat_room).order_by('-timestamp')[:50]
+        return [{'content': msg.content, 'sender': msg.sender.username, 'timestamp': msg.timestamp.isoformat()} for msg in messages][::-1]
