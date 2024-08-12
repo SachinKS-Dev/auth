@@ -1,0 +1,2 @@
+set DJANGO_SETTINGS_MODULE=chat_project.settings
+set DJANGO_SETTINGS_MODULE=chat_project.settings
