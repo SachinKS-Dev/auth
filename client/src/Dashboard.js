@@ -1,12 +1,14 @@
-// src/Dashboard.js
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
+import {Container, Typography} from '@mui/material';
 import axios from './axiosInstance';
-import ChatComponent from './ChatComponent';
+import UserList from './UserList';
+import ReceivedRequests from './ReceivedRequests';
+import ChatSection from './ChatSection';
 
 function Dashboard() {
     const [users, setUsers] = useState([]);
     const [receivedRequests, setReceivedRequests] = useState([]);
-    const [sentRequests, setSentRequests] = useState([]); // New state for sent requests
+    const [sentRequests, setSentRequests] = useState([]);
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
     const [selectedChatRoomId, setSelectedChatRoomId] = useState(null);
@@ -19,9 +21,7 @@ function Dashboard() {
         const fetchUsers = async () => {
             try {
                 const response = await axios.get('users/', {
-                    headers: {
-                        Authorization: `Token ${token}`,
-                    },
+                    headers: {Authorization: `Token ${token}`},
                 });
                 setUsers(response.data);
             } catch (err) {
@@ -32,9 +32,7 @@ function Dashboard() {
         const fetchReceivedRequests = async () => {
             try {
                 const response = await axios.get('interests/received/', {
-                    headers: {
-                        Authorization: `Token ${token}`,
-                    },
+                    headers: {Authorization: `Token ${token}`},
                 });
                 setReceivedRequests(response.data);
             } catch (err) {
@@ -42,12 +40,10 @@ function Dashboard() {
             }
         };
 
-        const fetchSentRequests = async () => {  // Fetch sent requests
+        const fetchSentRequests = async () => {
             try {
                 const response = await axios.get('interests/sent/', {
-                    headers: {
-                        Authorization: `Token ${token}`,
-                    },
+                    headers: {Authorization: `Token ${token}`},
                 });
                 setSentRequests(response.data);
             } catch (err) {
@@ -62,15 +58,9 @@ function Dashboard() {
 
     const handleSendInterest = async (userId) => {
         try {
-            await axios.post(
-                'interests/',
-                { to_user: userId },
-                {
-                    headers: {
-                        Authorization: `Token ${token}`,
-                    },
-                }
-            );
+            await axios.post('interests/', {to_user: userId}, {
+                headers: {Authorization: `Token ${token}`},
+            });
             setMessage('Interest sent successfully!');
             setError('');
         } catch (err) {
@@ -81,22 +71,14 @@ function Dashboard() {
 
     const handleConfirmInterest = async (interestId, status) => {
         try {
-            await axios.post(
-                `interests/${interestId}/handle/`,
-                { status: status },
-                {
-                    headers: {
-                        Authorization: `Token ${token}`,
-                    },
-                }
-            );
+            await axios.post(`interests/${interestId}/handle/`, {status: status}, {
+                headers: {Authorization: `Token ${token}`},
+            });
             setMessage(`Interest ${status === 2 ? 'accepted' : 'rejected'} successfully!`);
             setError('');
 
             const response = await axios.get('interests/received/', {
-                headers: {
-                    Authorization: `Token ${token}`,
-                },
+                headers: {Authorization: `Token ${token}`},
             });
             setReceivedRequests(response.data);
         } catch (err) {
@@ -107,15 +89,9 @@ function Dashboard() {
 
     const handleChat = async (userId) => {
         try {
-            const response = await axios.post(
-                'chatrooms/create_or_get/', // Endpoint to create or get a chat room
-                { participant_id: userId },
-                {
-                    headers: {
-                        Authorization: `Token ${token}`,
-                    },
-                }
-            );
+            const response = await axios.post('chatrooms/create_or_get/', {participant_id: userId}, {
+                headers: {Authorization: `Token ${token}`},
+            });
             setSelectedChatRoomId(response.data.chat_room_id);
             setSelectedChatUser(users.find(user => user.id === userId));
             setError('');
@@ -126,7 +102,6 @@ function Dashboard() {
     };
 
     const isChatAvailable = (userId) => {
-        // Check if there is an accepted received or sent request for this user
         const acceptedReceivedRequest = receivedRequests.find(
             (request) => request.from_user.id === userId && request.status === 2
         );
@@ -137,83 +112,37 @@ function Dashboard() {
     };
 
     return (
-        <div>
-            <h2>Dashboard</h2>
-            <p>Logged in as: {username}</p> {/* Display username */}
+        <Container maxWidth="lg" sx={{mt: 4}}>
+            <Typography variant="h4" gutterBottom>
+                Dashboard - {username}
+            </Typography>
+
+            {error && <Typography color="error">{error}</Typography>}
+            {message && <Typography color="primary">{message}</Typography>}
 
             <section>
-                <h3>Users</h3>
-                <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-                    {users.map((user) => {
-                        const chatAvailable = isChatAvailable(user.id);
-
-                        return (
-                            <div key={user.id} style={{
-                                border: '1px solid #ddd',
-                                margin: '10px',
-                                padding: '10px',
-                                borderRadius: '8px',
-                                width: '200px'
-                            }}>
-                                <h4>{user.username}</h4>
-                                {!chatAvailable && (
-                                    <button onClick={() => handleSendInterest(user.id)}>Send Request</button>
-                                )}
-                                {chatAvailable && (
-                                    <button onClick={() => handleChat(user.id)}>Chat</button>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
+                <Typography variant="h5">Users</Typography>
+                <UserList
+                    users={users}
+                    handleSendInterest={handleSendInterest}
+                    handleChat={handleChat}
+                    isChatAvailable={isChatAvailable}
+                />
             </section>
 
             <section>
-                <h3>Received Requests</h3>
-                <div>
-                    {receivedRequests.map((request) => (
-                        <div
-                            key={request.id}
-                            style={{
-                                border: '1px solid #ddd',
-                                margin: '10px',
-                                padding: '10px',
-                                borderRadius: '8px',
-                            }}
-                        >
-                            <p>{request.from_user.username} has sent you an interest request.</p>
-                            <p>Status: {request.status}</p>
-                            {request.status === 1 && (
-                                <div>
-                                    <button
-                                        onClick={() => handleConfirmInterest(request.id, 2)}
-                                        style={{ marginRight: '10px', backgroundColor: 'green', color: 'white' }}
-                                    >
-                                        Accept
-                                    </button>
-                                    <button
-                                        onClick={() => handleConfirmInterest(request.id, 3)}
-                                        style={{ backgroundColor: 'red', color: 'white' }}
-                                    >
-                                        Reject
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    ))}
-                </div>
+                <Typography variant="h5">Received Requests</Typography>
+                <ReceivedRequests
+                    receivedRequests={receivedRequests}
+                    handleConfirmInterest={handleConfirmInterest}
+                />
             </section>
 
-            {selectedChatRoomId && selectedChatUser && (
-                <section>
-                    <h3>Chat with {selectedChatUser.username}</h3>
-                    <ChatComponent chatRoomId={selectedChatRoomId} />
-                </section>
-            )}
-
-            {error && <p style={{ color: 'red' }}>{error}</p>}
-            {message && <p style={{ color: 'green' }}>{message}</p>}
-        </div>
+            <ChatSection
+                selectedChatRoomId={selectedChatRoomId}
+                selectedChatUser={selectedChatUser}
+            />
+        </Container>
     );
 }
 

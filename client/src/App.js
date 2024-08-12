@@ -13,7 +13,7 @@ function App() {
     <Router>
       <div className="App">
         <header className="App-header">
-          <h5>Wallet</h5>
+          <h5>Chat Hub!</h5>
           <Routes>
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
