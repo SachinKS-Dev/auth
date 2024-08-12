@@ -1,20 +1,24 @@
 // src/Register.js
 import React, { useState } from 'react';
 import axios from './axiosInstance';
+import { useNavigate } from 'react-router-dom';
 
 function Register() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const response = await axios.post('register/', { username, password });
-      console.log(response)
       setMessage('Registration successful!');
       setError('');
+      localStorage.setItem('token', response.data.token); // Assuming your backend returns a token on registration
+      localStorage.setItem('username', username); // Store username in localStorage
+      navigate('/dashboard'); // Redirect to dashboard
     } catch (err) {
       setError('Registration failed.');
       setMessage('');

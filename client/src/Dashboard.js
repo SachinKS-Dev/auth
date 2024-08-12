@@ -6,13 +6,14 @@ import ChatComponent from './ChatComponent';
 function Dashboard() {
     const [users, setUsers] = useState([]);
     const [receivedRequests, setReceivedRequests] = useState([]);
+    const [sentRequests, setSentRequests] = useState([]); // New state for sent requests
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
     const [selectedChatRoomId, setSelectedChatRoomId] = useState(null);
     const [selectedChatUser, setSelectedChatUser] = useState(null);
 
     const token = localStorage.getItem('token');
-    const username = localStorage.getItem('username'); // Retrieve username from localStorage
+    const username = localStorage.getItem('username');
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -41,8 +42,22 @@ function Dashboard() {
             }
         };
 
+        const fetchSentRequests = async () => {  // Fetch sent requests
+            try {
+                const response = await axios.get('interests/sent/', {
+                    headers: {
+                        Authorization: `Token ${token}`,
+                    },
+                });
+                setSentRequests(response.data);
+            } catch (err) {
+                setError('Failed to fetch sent requests.');
+            }
+        };
+
         fetchUsers();
         fetchReceivedRequests();
+        fetchSentRequests();
     }, [token]);
 
     const handleSendInterest = async (userId) => {
@@ -93,7 +108,7 @@ function Dashboard() {
     const handleChat = async (userId) => {
         try {
             const response = await axios.post(
-                'chatrooms/create_or_get/',  // Endpoint to create or get a chat room
+                'chatrooms/create_or_get/', // Endpoint to create or get a chat room
                 { participant_id: userId },
                 {
                     headers: {
@@ -110,6 +125,17 @@ function Dashboard() {
         }
     };
 
+    const isChatAvailable = (userId) => {
+        // Check if there is an accepted received or sent request for this user
+        const acceptedReceivedRequest = receivedRequests.find(
+            (request) => request.from_user.id === userId && request.status === 2
+        );
+        const acceptedSentRequest = sentRequests.find(
+            (request) => request.to_user.id === userId && request.status === 2
+        );
+        return acceptedReceivedRequest || acceptedSentRequest;
+    };
+
     return (
         <div>
             <h2>Dashboard</h2>
@@ -118,19 +144,27 @@ function Dashboard() {
             <section>
                 <h3>Users</h3>
                 <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-                    {users.map((user) => (
-                        <div key={user.id} style={{
-                            border: '1px solid #ddd',
-                            margin: '10px',
-                            padding: '10px',
-                            borderRadius: '8px',
-                            width: '200px'
-                        }}>
-                            <h4>{user.username}</h4>
-                            <button onClick={() => handleSendInterest(user.id)}>Send Request</button>
-                            <button onClick={() => handleChat(user.id)}>Chat</button>
-                        </div>
-                    ))}
+                    {users.map((user) => {
+                        const chatAvailable = isChatAvailable(user.id);
+
+                        return (
+                            <div key={user.id} style={{
+                                border: '1px solid #ddd',
+                                margin: '10px',
+                                padding: '10px',
+                                borderRadius: '8px',
+                                width: '200px'
+                            }}>
+                                <h4>{user.username}</h4>
+                                {!chatAvailable && (
+                                    <button onClick={() => handleSendInterest(user.id)}>Send Request</button>
+                                )}
+                                {chatAvailable && (
+                                    <button onClick={() => handleChat(user.id)}>Chat</button>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
             </section>
 

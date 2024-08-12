@@ -36,6 +36,9 @@ class LoginView(ObtainAuthToken):
 
 
 class UserListView(generics.ListAPIView):
-    queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [AllowAny]  # Changed to require authentication
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        # Exclude the user who made the request
+        return User.objects.exclude(id=self.request.user.id)

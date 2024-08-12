@@ -55,6 +55,19 @@ class ConfirmInterestView(APIView):
                         status=status.HTTP_200_OK)
 
 
+class SentInterestListView(generics.ListAPIView):
+    serializer_class = InterestSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        return Interest.objects.filter(from_user=self.request.user)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+
 class ReceivedInterestListView(generics.ListAPIView):
     serializer_class = InterestSerializer
     permission_classes = [AllowAny]
