@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Box, TextField, Button, Typography } from '@mui/material';
 
 function ChatComponent({ chatRoomId }) {
     const [messages, setMessages] = useState([]);
@@ -6,29 +7,25 @@ function ChatComponent({ chatRoomId }) {
     const [ws, setWs] = useState(null);
     const chatEndRef = useRef(null);
 
-    // Retrieve username from local storage
     const username = localStorage.getItem('username');
 
     useEffect(() => {
-        // Establish WebSocket connection
-        const socket = new WebSocket(`ws://localhost:8001/ws/chat/${chatRoomId}/`);
+        if (chatRoomId) {
+            const socket = new WebSocket(`ws://localhost:8001/ws/chat/${chatRoomId}/`);
+            setWs(socket);
 
-        setWs(socket);
+            socket.onmessage = (e) => {
+                const data = JSON.parse(e.data);
+                setMessages((prevMessages) => [...prevMessages, data]);
+            };
 
-        // Handle incoming WebSocket messages
-        socket.onmessage = (e) => {
-            const data = JSON.parse(e.data);
-            setMessages((prevMessages) => [...prevMessages, data]);
-        };
-
-        // Scroll to the end of the chat when a new message arrives
-        return () => {
-            socket.close();
-        };
+            return () => {
+                socket.close();
+            };
+        }
     }, [chatRoomId]);
 
     useEffect(() => {
-        // Auto-scroll to the latest message when messages are updated
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
@@ -36,62 +33,37 @@ function ChatComponent({ chatRoomId }) {
         if (ws && newMessage.trim() !== '') {
             const messageData = {
                 message: newMessage.trim(),
-                username: username, // Include username in the message data
+                username: username,
             };
             ws.send(JSON.stringify(messageData));
             setNewMessage('');
         }
     };
 
-    const handleKeyPress = (e) => {
-        if (e.key === 'Enter') {
-            handleSendMessage();
-        }
-    };
-
     return (
-        <div>
-            <div
-                style={{
-                    border: '1px solid #ddd',
-                    borderRadius: '8px',
-                    padding: '10px',
-                    height: '300px',
-                    overflowY: 'scroll',
-                    marginBottom: '10px',
-                }}
-            >
+        <Box sx={{ p: 2 }}>
+            <Box sx={{ border: '1px solid #ddd', borderRadius: 2, p: 2, height: 300, overflowY: 'auto', mb: 2 }}>
                 {messages.map((message, index) => (
-                    <div key={index} style={{ marginBottom: '10px' }}>
+                    <Typography key={index} sx={{ mb: 1 }}>
                         <strong>{message.sender}</strong>: {message.message}
-                    </div>
+                    </Typography>
                 ))}
                 <div ref={chatEndRef} />
-            </div>
-            <div style={{ display: 'flex' }}>
-                <input
-                    type="text"
+            </Box>
+            <Box sx={{ display: 'flex' }}>
+                <TextField
+                    fullWidth
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyPress={handleKeyPress}
                     placeholder="Type your message..."
-                    style={{
-                        flexGrow: 1,
-                        marginRight: '10px',
-                        padding: '8px',
-                        borderRadius: '4px',
-                        border: '1px solid #ddd',
-                    }}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                    sx={{ mr: 1 }}
                 />
-                <button
-                    onClick={handleSendMessage}
-                    style={{ padding: '8px 16px' }}
-                    disabled={!newMessage.trim()}
-                >
+                <Button variant="contained" color="primary" onClick={handleSendMessage} disabled={!newMessage.trim()}>
                     Send
-                </button>
-            </div>
-        </div>
+                </Button>
+            </Box>
+        </Box>
     );
 }
 

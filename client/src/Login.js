@@ -1,7 +1,7 @@
-// src/Login.js
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import axios from './axiosInstance';
-import {useNavigate} from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { Container, TextField, Button, Typography, Box, Paper } from '@mui/material';
 
 function Login() {
     const [username, setUsername] = useState('');
@@ -13,7 +13,7 @@ function Login() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await axios.post('login/', {username, password});
+            const response = await axios.post('login/', { username, password });
             localStorage.setItem('token', response.data.token); // Store token in localStorage
             localStorage.setItem('username', username); // Store username in localStorage
             setMessage('Login successful!');
@@ -26,22 +26,49 @@ function Login() {
     };
 
     return (
-        <div>
-            <h2>Login</h2>
-            <form onSubmit={handleSubmit}>
-                <div>
-                    <label>Username:</label>
-                    <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} required/>
-                </div>
-                <div>
-                    <label>Password:</label>
-                    <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required/>
-                </div>
-                <button type="submit">Login</button>
-                {error && <p style={{color: 'red'}}>{error}</p>}
-                {message && <p style={{color: 'green'}}>{message}</p>}
-            </form>
-        </div>
+        <Container maxWidth="xs">
+            <Paper elevation={3} sx={{ padding: 4, mt: 10 }}>
+                <Typography variant="h4" component="h1" gutterBottom align="center">
+                    Login
+                </Typography>
+                <form onSubmit={handleSubmit}>
+                    <Box mb={2}>
+                        <TextField
+                            label="Username"
+                            variant="outlined"
+                            fullWidth
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            required
+                        />
+                    </Box>
+                    <Box mb={2}>
+                        <TextField
+                            label="Password"
+                            type="password"
+                            variant="outlined"
+                            fullWidth
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                        />
+                    </Box>
+                    <Button type="submit" variant="contained" color="primary" fullWidth>
+                        Login
+                    </Button>
+                    {error && (
+                        <Typography color="error" align="center" sx={{ mt: 2 }}>
+                            {error}
+                        </Typography>
+                    )}
+                    {message && (
+                        <Typography color="primary" align="center" sx={{ mt: 2 }}>
+                            {message}
+                        </Typography>
+                    )}
+                </form>
+            </Paper>
+        </Container>
     );
 }
 
