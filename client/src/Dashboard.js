@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Container, Typography, Grid, Dialog, IconButton, Paper, Snackbar, Alert } from '@mui/material';
+import React, {useState, useEffect} from 'react';
+import {Container, Typography, Grid, Dialog, IconButton, Paper, Snackbar, Alert} from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import axios from './axiosInstance';
 import UserList from './UserList';
@@ -24,7 +24,7 @@ function Dashboard() {
         const fetchUsers = async () => {
             try {
                 const response = await axios.get('users/', {
-                    headers: { Authorization: `Token ${token}` },
+                    headers: {Authorization: `Token ${token}`},
                 });
                 setUsers(response.data);
             } catch (err) {
@@ -36,7 +36,7 @@ function Dashboard() {
         const fetchReceivedRequests = async () => {
             try {
                 const response = await axios.get('interests/received/', {
-                    headers: { Authorization: `Token ${token}` },
+                    headers: {Authorization: `Token ${token}`},
                 });
                 setReceivedRequests(response.data);
             } catch (err) {
@@ -48,7 +48,7 @@ function Dashboard() {
         const fetchSentRequests = async () => {
             try {
                 const response = await axios.get('interests/sent/', {
-                    headers: { Authorization: `Token ${token}` },
+                    headers: {Authorization: `Token ${token}`},
                 });
                 setSentRequests(response.data);
             } catch (err) {
@@ -71,8 +71,8 @@ function Dashboard() {
     const handleSendInterest = async (userId) => {
         setOpenSnackbar(false); // Close Snackbar before setting new message/error
         try {
-            await axios.post('interests/', { to_user: userId }, {
-                headers: { Authorization: `Token ${token}` },
+            await axios.post('interests/', {to_user: userId}, {
+                headers: {Authorization: `Token ${token}`},
             });
             setMessage('Interest sent successfully!');
             setError('');
@@ -87,15 +87,15 @@ function Dashboard() {
     const handleConfirmInterest = async (interestId, status) => {
         setOpenSnackbar(false); // Close Snackbar before setting new message/error
         try {
-            await axios.post(`interests/${interestId}/handle/`, { status: status }, {
-                headers: { Authorization: `Token ${token}` },
+            await axios.post(`interests/${interestId}/handle/`, {status: status}, {
+                headers: {Authorization: `Token ${token}`},
             });
             setMessage(`Interest ${status === 2 ? 'accepted' : 'rejected'} successfully!`);
             setError('');
             setOpenSnackbar(true); // Reopen Snackbar
 
             const response = await axios.get('interests/received/', {
-                headers: { Authorization: `Token ${token}` },
+                headers: {Authorization: `Token ${token}`},
             });
             setReceivedRequests(response.data);
         } catch (err) {
@@ -108,8 +108,8 @@ function Dashboard() {
     const handleChat = async (userId) => {
         setOpenSnackbar(false); // Close Snackbar before setting new message/error
         try {
-            const response = await axios.post('chatrooms/create_or_get/', { participant_id: userId }, {
-                headers: { Authorization: `Token ${token}` },
+            const response = await axios.post('chatrooms/create_or_get/', {participant_id: userId}, {
+                headers: {Authorization: `Token ${token}`},
             });
             setSelectedChatRoomId(response.data.chat_room_id);
             setSelectedChatUser(users.find(user => user.id === userId));
@@ -144,19 +144,19 @@ function Dashboard() {
     };
 
     return (
-        <Container maxWidth="lg" sx={{ mt: 2, borderRadius: 2 }}>
-            <Typography variant="h2" gutterBottom sx={{ mb: 4, p: 2}}>
+        <Container maxWidth="lg" sx={{mt: 2, borderRadius: 2}}>
+            <Typography variant="h2" gutterBottom sx={{mb: 4, p: 2}}>
                 {username}
             </Typography>
 
             {/* Add some space below the username */}
-            <div style={{ marginBottom: '16px' }}></div>
+            <div style={{marginBottom: '16px'}}></div>
 
             <Snackbar
                 open={openSnackbar}
                 autoHideDuration={2000}
                 onClose={handleCloseSnackbar}
-                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+                anchorOrigin={{vertical: 'top', horizontal: 'center'}}
             >
                 <Alert onClose={handleCloseSnackbar} severity={error ? 'error' : 'success'}>
                     {error || message}
@@ -165,7 +165,7 @@ function Dashboard() {
 
             <Grid container spacing={2}>
                 <Grid item xs={6}>
-                    <Paper elevation={3} sx={{ p: 2, borderRadius: 2, height: '100%' }}>
+                    <Paper elevation={3} sx={{p: 2, borderRadius: 2, height: '100%'}}>
                         <Typography variant="h5" gutterBottom>Notifications</Typography>
                         <ReceivedRequests
                             receivedRequests={receivedRequests}
@@ -174,9 +174,9 @@ function Dashboard() {
                     </Paper>
                 </Grid>
                 <Grid item xs={6}>
-                    <Paper elevation={3} sx={{ p: 2, borderRadius: 2, height: '100%' }}>
+                    <Paper elevation={3} sx={{p: 2, borderRadius: 2, height: '100%'}}>
                         <Typography variant="h5" gutterBottom>Users</Typography>
-                        <div style={{ height: '400px', overflowY: 'hidden' }}>
+                        <div style={{height: '400px', overflowY: 'hidden'}}>
                             <UserList
                                 users={users}
                                 handleSendInterest={handleSendInterest}
@@ -188,18 +188,29 @@ function Dashboard() {
                 </Grid>
             </Grid>
 
-            <Dialog open={chatOpen} onClose={handleCloseChat} maxWidth="sm" fullWidth>
+            <Dialog
+                open={chatOpen}
+                onClose={handleCloseChat}
+                maxWidth="sm"
+                fullWidth
+                sx={{
+                    '& .MuiDialog-paper': {
+                        overflowX: 'hidden',
+                    },
+                }}
+            >
                 <IconButton
                     edge="end"
                     color="inherit"
                     onClick={handleCloseChat}
                     aria-label="close"
-                    style={{ position: 'absolute', right: 8, top: 8 }}
+                    style={{position: 'absolute', right: 8, top: 8}}
                 >
-                    <CloseIcon />
+                    <CloseIcon/>
                 </IconButton>
-                <ChatComponent chatRoomId={selectedChatRoomId} />
+                <ChatComponent chatRoomId={selectedChatRoomId} selectedChatUser={selectedChatUser}/>
             </Dialog>
+
         </Container>
     );
 }

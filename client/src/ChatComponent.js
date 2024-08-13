@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, TextField, Button, Typography } from '@mui/material';
+import { Box, TextField, Button, Typography, Paper } from '@mui/material';
 
 function ChatComponent({ chatRoomId }) {
     const [messages, setMessages] = useState([]);
@@ -41,16 +41,48 @@ function ChatComponent({ chatRoomId }) {
     };
 
     return (
-        <Box sx={{ p: 2 }}>
-            <Box sx={{ border: '1px solid #ddd', borderRadius: 2, p: 2, height: 300, overflowY: 'auto', mb: 2 }}>
+        <Box sx={{ p: 2, mt:4 }}>
+            <Box
+                sx={{
+                    border: '1px solid #ddd',
+                    borderRadius: 2,
+                    p: 2,
+                    height: 300,
+                    overflowY: 'scroll',
+                    overflowX: 'hidden',  // Ensure horizontal scrolling is disabled
+                    mb: 2,
+                    backgroundColor: '#f0f0f0',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    scrollbarWidth: 'none', /* For Firefox */
+                    '&::-webkit-scrollbar': {
+                        display: 'none', /* For Chrome, Safari, and Opera */
+                    },
+                }}
+            >
                 {messages.map((message, index) => (
-                    <Typography key={index} sx={{ mb: 1 }}>
-                        <strong>{message.sender}</strong>: {message.message}
-                    </Typography>
+                    <Paper
+                        key={index}
+                        sx={{
+                            p: 1.5,
+                            mb: 1,
+                            maxWidth: '70%',  // Ensure messages don't exceed 70% of the container's width
+                            alignSelf: message.sender === username ? 'flex-end' : 'flex-start',
+                            backgroundColor: message.sender === username ? '#DCF8C6' : '#FFFFFF',
+                            borderRadius: 2,
+                            boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.1)',
+                            wordBreak: 'break-word',  // Break long words to avoid overflow
+                        }}
+                    >
+                        <Typography variant="body2" sx={{ color: '#555' }}>
+                            {message.sender === username ? 'You' : message.sender}
+                        </Typography>
+                        <Typography variant="body1">{message.message}</Typography>
+                    </Paper>
                 ))}
                 <div ref={chatEndRef} />
             </Box>
-            <Box sx={{ display: 'flex' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <TextField
                     fullWidth
                     value={newMessage}
