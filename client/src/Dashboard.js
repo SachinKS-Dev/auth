@@ -15,7 +15,7 @@ function Dashboard() {
     const [selectedChatRoomId, setSelectedChatRoomId] = useState(null);
     const [selectedChatUser, setSelectedChatUser] = useState(null);
     const [chatOpen, setChatOpen] = useState(false);
-    const [openSnackbar, setOpenSnackbar] = useState(false); // Initialize Snackbar state
+    const [openSnackbar, setOpenSnackbar] = useState(false);
 
     const token = localStorage.getItem('token');
     const username = localStorage.getItem('username');
@@ -29,7 +29,7 @@ function Dashboard() {
                 setUsers(response.data);
             } catch (err) {
                 setError('Failed to fetch users.');
-                setOpenSnackbar(true); // Show Snackbar on error
+                setOpenSnackbar(true);
             }
         };
 
@@ -41,7 +41,7 @@ function Dashboard() {
                 setReceivedRequests(response.data);
             } catch (err) {
                 setError('Failed to fetch received requests.');
-                setOpenSnackbar(true); // Show Snackbar on error
+                setOpenSnackbar(true);
             }
         };
 
@@ -53,7 +53,7 @@ function Dashboard() {
                 setSentRequests(response.data);
             } catch (err) {
                 setError('Failed to fetch sent requests.');
-                setOpenSnackbar(true); // Show Snackbar on error
+                setOpenSnackbar(true);
             }
         };
 
@@ -61,12 +61,6 @@ function Dashboard() {
         fetchReceivedRequests();
         fetchSentRequests();
     }, [token]);
-
-    useEffect(() => {
-        if (error || message) {
-            setOpenSnackbar(true); // Show Snackbar when there's an error or message
-        }
-    }, [error, message]);
 
     const handleSendInterest = async (userId) => {
         setOpenSnackbar(false); // Close Snackbar before setting new message/error
@@ -77,6 +71,15 @@ function Dashboard() {
             setMessage('Interest sent successfully!');
             setError('');
             setOpenSnackbar(true); // Reopen Snackbar
+
+            // Update sentRequests state to include the new request
+            const newRequest = {
+                id: new Date().getTime(), // Assuming an ID is generated or use a proper ID if returned from the server
+                to_user: {id: userId},
+                status: 1,
+            };
+            setSentRequests((prevRequests) => [...prevRequests, newRequest]);
+
         } catch (err) {
             setError('Failed to send interest.');
             setMessage('');
@@ -84,15 +87,16 @@ function Dashboard() {
         }
     };
 
+
     const handleConfirmInterest = async (interestId, status) => {
-        setOpenSnackbar(false); // Close Snackbar before setting new message/error
+        setOpenSnackbar(false);
         try {
             await axios.post(`interests/${interestId}/handle/`, {status: status}, {
                 headers: {Authorization: `Token ${token}`},
             });
             setMessage(`Interest ${status === 2 ? 'accepted' : 'rejected'} successfully!`);
             setError('');
-            setOpenSnackbar(true); // Reopen Snackbar
+            setOpenSnackbar(true);
 
             const response = await axios.get('interests/received/', {
                 headers: {Authorization: `Token ${token}`},
@@ -101,12 +105,12 @@ function Dashboard() {
         } catch (err) {
             setError(`Failed to ${status === 1 ? 'accept' : 'reject'} the interest.`);
             setMessage('');
-            setOpenSnackbar(true); // Reopen Snackbar
+            setOpenSnackbar(true);
         }
     };
 
     const handleChat = async (userId) => {
-        setOpenSnackbar(false); // Close Snackbar before setting new message/error
+        setOpenSnackbar(false); // Ensure no previous messages are displayed
         try {
             const response = await axios.post('chatrooms/create_or_get/', {participant_id: userId}, {
                 headers: {Authorization: `Token ${token}`},
@@ -114,14 +118,14 @@ function Dashboard() {
             setSelectedChatRoomId(response.data.chat_room_id);
             setSelectedChatUser(users.find(user => user.id === userId));
             setChatOpen(true);
-            setError('');
-            setOpenSnackbar(true); // Reopen Snackbar
+            // No message is set here to avoid showing a Snackbar when starting a chat
         } catch (err) {
             setError('Failed to start chat.');
             setMessage('');
-            setOpenSnackbar(true); // Reopen Snackbar
+            setOpenSnackbar(true);
         }
     };
+
 
     const isChatAvailable = (userId) => {
         const acceptedReceivedRequest = receivedRequests.find(
@@ -130,7 +134,20 @@ function Dashboard() {
         const acceptedSentRequest = sentRequests.find(
             (request) => request.to_user.id === userId && request.status === 2
         );
-        return acceptedReceivedRequest || acceptedSentRequest;
+
+        if (acceptedReceivedRequest || acceptedSentRequest) {
+            return 'chatAvailable';
+        }
+
+        const pendingSentRequest = sentRequests.find(
+            (request) => request.to_user.id === userId && request.status === 1
+        );
+
+        if (pendingSentRequest) {
+            return 'pending';
+        }
+
+        return 'noRequest';
     };
 
     const handleCloseChat = () => {
@@ -149,7 +166,6 @@ function Dashboard() {
                 {username}
             </Typography>
 
-            {/* Add some space below the username */}
             <div style={{marginBottom: '16px'}}></div>
 
             <Snackbar
@@ -164,19 +180,32 @@ function Dashboard() {
             </Snackbar>
 
             <Grid container spacing={2}>
-                <Grid item xs={6}>
+                <Grid item xs={9}>
                     <Paper elevation={3} sx={{p: 2, borderRadius: 2, height: '100%'}}>
                         <Typography variant="h5" gutterBottom>Notifications</Typography>
-                        <ReceivedRequests
-                            receivedRequests={receivedRequests}
-                            handleConfirmInterest={handleConfirmInterest}
-                        />
+                        <div style={{height: '400px', overflowY: 'auto'}}> {/* Scrolling added */}
+                            <ReceivedRequests
+                                receivedRequests={receivedRequests}
+                                handleConfirmInterest={handleConfirmInterest}
+                            />
+                        </div>
                     </Paper>
                 </Grid>
-                <Grid item xs={6}>
+                <Grid item xs={3}>
                     <Paper elevation={3} sx={{p: 2, borderRadius: 2, height: '100%'}}>
                         <Typography variant="h5" gutterBottom>Users</Typography>
-                        <div style={{height: '400px', overflowY: 'hidden'}}>
+                        <div style={{
+                            height: '400px',
+                            overflowY: 'auto',
+                            scrollbarWidth: 'none',   /* For Firefox */
+                            msOverflowStyle: 'none',  /* For Internet Explorer and Edge */
+                        }}>
+                            {/* Hide scrollbar for WebKit browsers like Chrome, Safari, and Edge */}
+                            <style jsx>{`
+                              ::-webkit-scrollbar {
+                                display: none;
+                              }
+                            `}</style>
                             <UserList
                                 users={users}
                                 handleSendInterest={handleSendInterest}
@@ -186,7 +215,9 @@ function Dashboard() {
                         </div>
                     </Paper>
                 </Grid>
+
             </Grid>
+
 
             <Dialog
                 open={chatOpen}
@@ -210,7 +241,6 @@ function Dashboard() {
                 </IconButton>
                 <ChatComponent chatRoomId={selectedChatRoomId} selectedChatUser={selectedChatUser}/>
             </Dialog>
-
         </Container>
     );
 }
